@@ -1,0 +1,82 @@
+plugins {
+	id "java"
+	id "application"
+	id "org.openjfx.javafxplugin" version "0.0.8"
+	id "de.undercouch.download" version "4.1.1"
+}
+
+javafx {
+	version = "11.0.2"
+	modules = ["javafx.controls"]
+}
+
+
+task buildCore(dependsOn: "copyJson") {
+	doLast {
+		sourceSets {
+			main {
+				java {
+					exclude "**/ui/*.java"
+				}
+			}
+		}
+	}
+	finalizedBy(build)
+}
+
+task buildUI() {
+	doLast {
+		sourceSets {
+			main {
+				java {
+					
+				}
+			}
+		}
+	}
+	finalizedBy(build)
+}
+
+task runCore(dependsOn: "buildCore") {
+	doLast {
+		mainClassName = "de.unitrier.st.core.Main"
+	}
+	finalizedBy(run)
+}
+
+task runUI(dependsOn: ["buildUI", "copyJson"]) {
+	doLast {
+		mainClassName = "de.unitrier.st.ui.Ui"
+	}
+	finalizedBy(run)
+}
+
+task down(type: Download) {
+	src "https://datahub.io/core/covid-19/r/covid-19_zip.zip"
+	dest buildDir
+}
+
+task unzip(type: Copy, dependsOn: "down") {
+	def zipFile = file("$buildDir/covid-19_zip.zip")
+	def outputDir = file("$buildDir/unpacked/dist")
+	
+	from zipTree(zipFile)
+	into outputDir
+}
+
+task copyJson(type: Copy, dependsOn: "unzip") {
+	def jsonFile = file("$buildDir/unpacked/dist/data/countries-aggregated_json.json")
+	def resourceDir = file("src/main/resources")
+	
+	from(jsonFile)
+	into resourceDir
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation group: "com.google.code.gson", name: "gson", version: "2.10"
+	testImplementation group: "junit", name: "junit", version: "4.13.1"
+}	
